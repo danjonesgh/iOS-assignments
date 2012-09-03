@@ -8,7 +8,7 @@
 
 #import "imageViewController.h"
 
-@interface imageViewController () <UIScrollViewDelegate>
+@interface imageViewController () <UIScrollViewDelegate, UISplitViewControllerDelegate>
 @property (weak, nonatomic) IBOutlet UIScrollView *scrollView;
 @property (weak, nonatomic) IBOutlet UIImageView *imageView;
 
@@ -59,37 +59,27 @@
 
 - (void)viewWillAppear:(BOOL)animated
 {
+    
     CGFloat widthRatio = self.scrollView.bounds.size.width / self.imageView.image.size.width;
     //NSLog(@"width rat %f", widthRatio);
     CGFloat heightRatio = self.scrollView.bounds.size.height / self.imageView.image.size.height;
-    //NSLog(@"height rat %f", heightRatio);
-    //NSLog(@"new rat %f", widthRatio/heightRatio);
-   // CGRect newRect = CGRectMake(0, 0, 652, 490 );
-    //[self.scrollView zoomToRect:newRect animated:NO];
+
     self.scrollView.zoomScale = MAX(widthRatio, heightRatio);
-    //NSLog(@"some img %f", self.imageView.image.size.width);
-    //NSLog(@"some imgzz %f", self.imageView.image.size.height);
-    CGRect visibleRect = [self.scrollView convertRect:self.scrollView.bounds toView:self.imageView];
-    //NSLog(@"vis rect %@", NSStringFromCGRect(visibleRect));
-    // self.imageView.image.
-    
-    //self.imageView.frame = CGRectMake(0, 0, self.imageView.image.size.width, self.imageView.image.size.height);
-    
+     
 }
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
     self.scrollView.delegate  = self;
-    
+    self.splitViewController.delegate = self;
     [self.imageView setImage:self.imageToUse];
   
     self.scrollView.contentSize = self.imageView.image.size;
-   // self.scrollView.zoomScale = 4;
-   // NSLog(@"crr bounds %@", NSStringFromCGRect(self.scrollView.bounds));
+    
     self.imageView.frame = CGRectMake(0, 0, self.imageView.image.size.width, self.imageView.image.size.height);
     self.title = self.titleOfImage;
-    //self.photoTitle.text = self.titleOfImage;
+    
 	// Do any additional setup after loading the view.
 }
 

@@ -81,7 +81,10 @@
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
 {
-    return (interfaceOrientation == UIInterfaceOrientationPortrait);
+    //return YES;
+    //return (interfaceOrientation == UIInterfaceOrientationPortrait);
+    return YES;
+
 }
 
 #pragma mark - Table view data source
@@ -102,6 +105,8 @@
     // Configure the cell...
     NSDictionary *photo = [self.photoArray objectAtIndex:indexPath.row];
   
+    // if the title isn't empty use that value, otherwise use the description, otherwise use unknown
+    // once these are loaded stop the spinner
     if(![[photo valueForKeyPath:@"title"] isEqualToString:@""])
     {
         cell.textLabel.text = [photo valueForKeyPath:@"title"];
@@ -184,7 +189,7 @@
     [[NSUserDefaults standardUserDefaults] setObject:self.arrayOfRecents forKey:@"array of recents"];
 
     
-    [self performSegueWithIdentifier:@"imageSelected" sender:self];
+   // [self performSegueWithIdentifier:@"imageSelected" sender:self];
     // Navigation logic may go here. Create and push another view controller.
     /*
      <#DetailViewController#> *detailViewController = [[<#DetailViewController#> alloc] initWithNibName:@"<#Nib name#>" bundle:nil];
@@ -195,19 +200,13 @@
 }
 
 
-// Configure the cell...
-//NSDictionary *photo = [self.photoArray objectAtIndex:indexPath.row];
-//if(![[photo valueForKeyPath:@"title"] isEqualToString:@""])
-//{
-//    cell.textLabel.text = [photo valueForKeyPath:@"title"];
-
 
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
 {
     if([segue.identifier isEqualToString:@"imageSelected"])
     {
+        // send image and title in segue
         [segue.destinationViewController setImageToUse:self.imageWeSelected];
-        //NSLog(@"image title %@", self.imageTitle);
         [segue.destinationViewController setTitleOfImage:self.imageTitle];
     }
 }

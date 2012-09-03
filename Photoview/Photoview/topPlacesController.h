@@ -13,7 +13,6 @@
 @interface topPlacesController : UITableViewController
 @property (nonatomic, strong) NSArray *places; // of Flickr photo dictionaries
 @property (nonatomic, weak) NSDictionary *chosenDictionary;
-//@property (nonatomic, strong) UIActivityIndicatorView *spinner;
 @end
 
 
