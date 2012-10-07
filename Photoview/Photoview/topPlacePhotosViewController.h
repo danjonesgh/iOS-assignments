@@ -12,6 +12,8 @@
 @property (nonatomic, strong) NSArray *photoArray;
 @property (nonatomic, strong) UIActivityIndicatorView *spinner;
 @property (nonatomic, strong) UIImage *imageWeSelected;
+@property (nonatomic, strong) NSDictionary *photoSelected;
 @property (nonatomic, strong) NSString *imageTitle;
+@property (nonatomic, strong) NSString *imageID;
 @property (nonatomic, strong) NSArray *arrayOfRecents;
 @end

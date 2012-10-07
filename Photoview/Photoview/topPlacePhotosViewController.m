@@ -9,8 +9,11 @@
 #import "topPlacePhotosViewController.h"
 #import "imageViewController.h"
 #import "FlickrFetcher.h"
+#import "mapViewController.h"
+#import "photoAnnotation.h"
+#import "photoCache.h"
 
-@interface topPlacePhotosViewController () 
+@interface topPlacePhotosViewController () <MapViewControllerDelegate>
 
 @end
 
@@ -21,6 +24,8 @@
 @synthesize imageWeSelected = _imageWeSelected;
 @synthesize imageTitle = _imageTitle;
 @synthesize arrayOfRecents = _arrayOfRecents;
+@synthesize imageID = _imageID;
+@synthesize photoSelected = _photoSelected;
 
 - (id)initWithStyle:(UITableViewStyle)style
 {
@@ -49,6 +54,7 @@
         
     }
 }
+
 
 - (UIActivityIndicatorView *)spinner
 {
@@ -101,17 +107,17 @@
     static NSString *CellIdentifier = @"Top Photos cell";
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
     
-   
+    //NSLog(@"photo array %@", self.photoArray);
     // Configure the cell...
     NSDictionary *photo = [self.photoArray objectAtIndex:indexPath.row];
-  
+   // NSLog(@"photo %@", photo);
     // if the title isn't empty use that value, otherwise use the description, otherwise use unknown
     // once these are loaded stop the spinner
     if(![[photo valueForKeyPath:@"title"] isEqualToString:@""])
     {
         cell.textLabel.text = [photo valueForKeyPath:@"title"];
     }
-    else if( ![[photo valueForKeyPath:@"description._content"] isEqualToString:@""] && ![[[photo valueForKeyPath:@"description._content"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]] isEqualToString:@""])
+    else if( ![[photo valueForKeyPath:FLICKR_PHOTO_DESCRIPTION] isEqualToString:@""] && ![[[photo valueForKeyPath:@"description._content"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]] isEqualToString:@""])
     {
         cell.textLabel.text = [photo valueForKeyPath:@"description._content"];
     }
@@ -120,6 +126,7 @@
         cell.textLabel.text = @"Unknown";
     }
     [self.spinner stopAnimating];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Map" style:UIBarButtonItemStyleBordered target:self action:@selector(mapPressedagain)];
     return cell;
 }
 
@@ -166,13 +173,39 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    
-    NSURL *url =  [FlickrFetcher urlForPhoto:[self.photoArray objectAtIndex:indexPath.row] format:2];
-    UIImage *imageSelected = [UIImage imageWithData:[NSData dataWithContentsOfURL:url]];
- 
+    //NSSearchPathDirectory search = NSCachesDirectory;
+   // NSSearchPathDomainMask mask = 2;
+    //NSFileManager *fileManager;
+   // NSLog(@"test this %@", [self.photoArray objectAtIndex:indexPath.row]);
+   // NSURL *urlx;
+  //  BOOL created;
+   // NSArray *ok = [fileManager URLsForDirectory:search inDomains:mask];
+    //NSError erros;
+    //urlx = [fileManager URLForDirectory:search inDomain:mask appropriateForURL:nil create:YES error:nil];
+   
+   // NSLog(@"urls %@", ok);
+  //  [photoCache ];
+    photoCache *newcache = [photoCache createCacheWithURL:@"photo"];
+    NSLog(@"first cache %@", newcache);
+    NSURL *cachedURL = [newcache findCachedPhoto:[self.photoArray objectAtIndex:indexPath.row]];
+    UIImage *imageSelected;
+    if(!cachedURL)
+    {
+       // NSLog(@"not cached");
+        NSURL *url =  [FlickrFetcher urlForPhoto:[self.photoArray objectAtIndex:indexPath.row] format:FlickrPhotoFormatLarge];
+        imageSelected = [UIImage imageWithData:[NSData dataWithContentsOfURL:url]];
+        [newcache cachePhoto:[NSData dataWithContentsOfURL:url] andWithPhotoDict:[self.photoArray objectAtIndex:indexPath.row]];
+    }
+    else
+    {
+        NSLog(@"using cached url");
+        imageSelected = [UIImage imageWithData:[NSData dataWithContentsOfURL:cachedURL]];
+    }
     self.imageWeSelected = imageSelected;
     self.imageTitle = [[self.photoArray objectAtIndex:indexPath.row] valueForKey:@"title"]; 
-    
+    self.imageID = [[self.photoArray objectAtIndex:indexPath.row] valueForKey:FLICKR_PHOTO_ID];
+    self.photoSelected = [self.photoArray objectAtIndex:indexPath.row];
+    NSLog(@"our photo %@", [self.photoArray objectAtIndex:indexPath.row]);
     // get copy of recents, if not in the list add it, if list is 20 remove the oldest, add one
     NSMutableArray *recentsCopy = [self.arrayOfRecents mutableCopy];
     if(![recentsCopy containsObject:[self.photoArray objectAtIndex:indexPath.row]])
@@ -188,8 +221,11 @@
     
     [[NSUserDefaults standardUserDefaults] setObject:self.arrayOfRecents forKey:@"array of recents"];
 
+    [[self.splitViewController.viewControllers lastObject] setTitleOfImage:self.imageTitle];
+    [[self.splitViewController.viewControllers lastObject] setImageToUse:self.imageWeSelected];
     
-   // [self performSegueWithIdentifier:@"imageSelected" sender:self];
+    [self performSegueWithIdentifier:@"imageSelected" sender:self];
+    
     // Navigation logic may go here. Create and push another view controller.
     /*
      <#DetailViewController#> *detailViewController = [[<#DetailViewController#> alloc] initWithNibName:@"<#Nib name#>" bundle:nil];
@@ -201,15 +237,62 @@
 
 
 
+- (NSArray *)mapAnnotations
+{
+    NSMutableArray *annotations = [NSMutableArray arrayWithCapacity:[self.photoArray count]];
+    for (NSDictionary *photo in self.photoArray) {
+        [annotations addObject:[photoAnnotation annotationForPhoto:photo]];
+    }
+    return annotations;
+}
+
+
+
+#pragma mark - MapViewControllerDelegate
+
+- (UIImage *)mapViewController:(mapViewController *)sender imageForAnnotation:(id <MKAnnotation>)annotation withFormat:(FlickrPhotoFormat)format
+{
+    photoAnnotation *fpa = (photoAnnotation *)annotation;
+    NSURL *url = [FlickrFetcher urlForPhoto:fpa.photo format:format];
+    NSData *data = [NSData dataWithContentsOfURL:url];
+    return data ? [UIImage imageWithData:data] : nil;
+}
+
+
+
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
 {
+    if([segue.identifier isEqualToString:@"photosToMap"])
+    {
+        
+        id map = segue.destinationViewController;
+        if([map isKindOfClass:[mapViewController class]])
+        {
+            mapViewController *mapvc = (mapViewController *)map;
+            mapvc.delegate = self;
+        }
+        [segue.destinationViewController setMapPlaces:[self mapAnnotations]];
+    }
+    // send image and title in segue
     if([segue.identifier isEqualToString:@"imageSelected"])
     {
-        // send image and title in segue
         [segue.destinationViewController setImageToUse:self.imageWeSelected];
+        
         [segue.destinationViewController setTitleOfImage:self.imageTitle];
+        [segue.destinationViewController setPhoto:self.photoSelected];
+        [segue.destinationViewController setImageID:self.imageID];
     }
 }
+
+- (void)mapPressedagain
+{
+    [self performSegueWithIdentifier:@"photosToMap" sender:self];
+}
+
+
+
+
+
 
 
 

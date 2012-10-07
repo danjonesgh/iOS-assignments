@@ -9,9 +9,11 @@
 #import "topPlacesController.h"
 #import "topPlacePhotosViewController.h"
 #import "FlickrFetcher.h"
+#import "mapViewController.h"
+#import "photoAnnotation.h"
 
 
-@interface topPlacesController ()
+@interface topPlacesController () 
 @property (nonatomic, strong) NSDictionary *photosForPlace;
 @end
 
@@ -122,7 +124,7 @@
 
     //return [self.places count];
     NSString *place = [self placeForSection:section];
-    NSLog(@"place in numrow %@", place);
+    //NSLog(@"place in numrow %@", place);
     NSArray *photosByPlace = [self.photosForPlace objectForKey:place];
     return [photosByPlace count];
 }
@@ -228,22 +230,60 @@
 }
 
 
+- (IBAction)mapPressed:(id)sender {
+    [self performSegueWithIdentifier:@"placesToMap" sender:self];
+    
+    
+}
+
+
 
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
 {
- 
-    // get the photos for a top place in a separate thread, send them in the segue
-    dispatch_queue_t downloadQueueWhat = dispatch_queue_create("flickr downloaderyo", NULL);
-    dispatch_async(downloadQueueWhat, ^{
+    if([segue.identifier isEqualToString:@"photosForPlace"])
+    {
+        // get the photos for a top place in a separate thread, send them in the segue
+        dispatch_queue_t downloadQueueWhat = dispatch_queue_create("flickr downloaderyo", NULL);
+        dispatch_async(downloadQueueWhat, ^{
         NSArray *photos = [FlickrFetcher photosInPlace:self.chosenDictionary maxResults:50];
         
         dispatch_async(dispatch_get_main_queue(), ^{
             if ([segue.identifier isEqualToString:@"photosForPlace"]) {
                 [segue.destinationViewController setPhotoArray:photos];
             }
+            });
         });
-    });
-    dispatch_release(downloadQueueWhat);
+        dispatch_release(downloadQueueWhat);
+    }
+    else if([segue.identifier isEqualToString:@"placesToMap"])
+    {
+        
+        id map = segue.destinationViewController;
+        if([map isKindOfClass:[mapViewController class]])
+        {
+           // mapViewController *mapvc = (mapViewController *)map;
+            //mapvc.delegate = self;
+        }
+        [segue.destinationViewController setMapPlaces:[self mapAnnotations]];
+    }
 }
+
+
+
+- (NSArray *)mapAnnotations
+{
+    NSMutableArray *annotations = [NSMutableArray arrayWithCapacity:[self.places count]];
+    for (NSDictionary *place in self.places) {
+        [annotations addObject:[photoAnnotation annotationForPhoto:place]];
+    }
+    return annotations;
+}
+
+
+
+
+
+
+
 
 @end
